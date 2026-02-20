@@ -27,86 +27,155 @@
 	</head>
 	<body>
 		<div class="container">
-		<h1>CS184/284A Spring 2025 Homework 1 Write-Up</h1>
-		<div style="text-align: center;">Names: </div>
+		<h1>CS184/284A Spring 2026 Homework 1 Write-Up</h1>
+		<div style="text-align: center;">Athul Krishnan</div>
 
 		<br>
 
-		Link to webpage: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-		
+		Link to webpage: <a href="TODO">TODO</a>
+
 		<br>
 
-		Link to GitHub repository: (TODO) <a href="https://cs184.eecs.berkeley.edu/sp25">cs184.eecs.berkeley.edu/sp25</a>
-
-		<figure>
-			<img src="lion.jpg" alt="Lion" style="width:50%"/>
-			<figcaption>You can add images with captions!</figcaption>
-		</figure>
-
-		<!--
-		We've already added one heading per task, to make your write-up as navigable when grading. Please fit your write-up within these sections!
-		-->
+		Link to GitHub repository: <a href="TODO">TODO</a>
 
 		<h2>Overview</h2>
-		Give a high-level overview of what you implemented in this homework. Think about what you've built as a whole. Share your thoughts on what interesting things you've learned from completing the homework.
+		<p>In this homework, I implemented a Rasterizer in C++ that utilizes supersampling with antialiasing, via various pixel and mipmap level sampling techniques! To be more specific, I implemented the following:
+		<ul><li> Winding-agnostic Triangle Rasterization </li><li> supersampling for antialiasing </li><li> barycentric coordinates and homogenous transforms </li><li>Nearest neighbor sampling</li><li>Texture mapping with nearest neighbor/bilinear sampling</li><li>Mipmapping with level sampling</li></ul> </p>
 
+		<!-- ==================== TASK 1 ==================== -->
 		<h2>Task 1: Drawing Single-Color Triangles</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<p>Here is an example 2x2 gridlike structure using an HTML table. Each <b>tr</b> is a row and each <b>td</b> is a column in that row. You might find this useful for framing and showing your result images in an organized fashion.</p>
+		<p>I computed a minimal bounding box around the triangle using the minimum and maximum x and y coordinates combined from any of its vertices, then iterated through each pixel in this bounding box. For each pixel, I sample in the center by offsetting x and y by 0.5 (as per the spec), then check if the point is inside the triangle using the line equations from lecture 2. If the point is on the inside of all 3 edges (if all signs are equal, to handle both winding orders +-), the pixel is colored. </p>
+
+		<p>The algorithm I've implemented directly computes the bounding box of the triangle (min x, min y) to (max x, max y) and then iterates through each pixel in the bounding box to check if the pixel is inside the triangle. As a result, we iterate over exactly the points in the bounding box of the triangle.</p>
+
+		<figure>
+			<img src="images/task1_test4.png" width="600px"/>
+			<figcaption>Screenshot of basic/test4.svg with pixel inspector.</figcaption>
+		</figure>
+
+		<!-- ==================== TASK 2 ==================== -->
+		<h2>Task 2: Antialiasing by Supersampling</h2>
+
+		<p>In the previous task, I sampled a single time at the center of each pixel. Here, I took a square grid of samples across the pixel area, where each subsample gets its own edge test and is written to the sample_buffer. The sample_buffer is enlarged to account for this increased "sample rate", i.e. the size of the grid of samples per pixel. Now, the sample buffer is of dimension width * height * sample_rate. To account for this, I updated fill_pixel to fill all sub-samples, and average across the subsamples for the final color in the pixel in resolve_to_framebuffer. This allows us to get a form of anti-aliasing on sharp edges, as pixels that are partly within the triangle will have an intermediate color (averaged between the samples within and outside the triangle), smoothing jaggy edges!</p>
+
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
 			  <tr>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/task2_rate1.png" width="300px"/>
+				  <figcaption>Sample rate 1.</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
-				</td>
-			  </tr>
-			  <tr>
-				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/task2_rate4.png" width="300px"/>
+				  <figcaption>Sample rate 4.</figcaption>
 				</td>
 				<td style="text-align: center;">
-				  <img src="lion.jpg" width="400px"/>
-				  <figcaption>Caption goes here.</figcaption>
+				  <img src="images/task2_rate16.png" width="300px"/>
+				  <figcaption>Sample rate 16.</figcaption>
 				</td>
 			  </tr>
 			</table>
 		</div>
-		
-		<h2>Task 2: Antialiasing by Supersampling</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
+		<p>We can see that as we increase the sample rate, the slightly diagonal edge of the red triangle becomes smoother and smoother, as we use a finer and finer grid of samples per pixel! This effectively smoothens the edges.</p>
+
+		<!-- ==================== TASK 3 ==================== -->
 		<h2>Task 3: Transforms</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
+		<figure>
+			<img src="images/task3_robot.png" width="400px"/>
+		</figure>
+
+		<p>he wave!</p>
+
+		<!-- ==================== TASK 4 ==================== -->
 		<h2>Task 4: Barycentric coordinates</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
+		<p>Barycentric coordinates allow us to define coordinates relative to the three vertices of a triangle, by defining a point as a weighted average of the vertices' coordinates. This allows us to more naturally check whether a point is inside a triangle, by seeing if the point's barycentric coordinates sum to 1 and are all positive. This also allows us to treat the triangle as a smooth interpolation region, allowing is to smoothly interpolate colors (and presumably textures as well, e.g. normals) between vertices! In this task, this is represented by smoothly interpolated color maps. </p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/task4_rgb_triangle.png" width="400px"/>
+				  <figcaption>RGB triangle showing barycentric interpolation.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/task4_test7.png" width="400px"/>
+				  <figcaption>Screenshot of basic/test7.svg.</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<!-- ==================== TASK 5 ==================== -->
 		<h2>Task 5: "Pixel sampling" for texture mapping</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
+		<p>Pixel sampling is just looking up a color from a texture, given a (u, v) coordinate. Nearest neighbor sampling just looks at the closest texel to the provided u, v values, while bilinear looks at the four surrounding texels (as u, v do not have to be integers, and could be between texels) and interpolates between them. </p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/task5_nearest_1.png" width="400px"/>
+				  <figcaption>P_NEAREST, 1 sample per pixel.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/task5_nearest_16.png" width="400px"/>
+				  <figcaption>P_NEAREST, 16 samples per pixel.</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/task5_bilinear_1.png" width="400px"/>
+				  <figcaption>P_LINEAR, 1 sample per pixel.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/task5_bilinear_16.png" width="400px"/>
+				  <figcaption>P_LINEAR, 16 samples per pixel.</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<p>We can see that at 1 sample per pixel, the nearest neighbor sampling struggles to connect a gridline that is intended to be continuous, while the biliniear sampling does a much better job at smoothening it out and giving the illusion of continuity. On the other hand, at 16 samples per pixel, the difference between the sampling methods is much more minor; the NN sampling is able to connect the line in a somewhat bumpy manner, while the bilinear interpolation does a clean job.  </p>
+
+		<!-- ==================== TASK 6 ==================== -->
 		<h2>Task 6: "Level Sampling" with mipmaps for texture mapping</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
-		<h2>(Optional) Task 7: Extra Credit - Draw Something Creative!</h2>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+		<p>Level sampling (mipmapping) decides the resolution of texture to sample based on how much the texture is beign shring. By calculating the partials of u and v with respect to x and y, (effectively the UV coords w.r.t to the screen coords), we know the amount the UV coordinates change per screen pixel, and thus tells us how many texels map to one pixel. When we take the log base 2 of that, we get the mipmap level (e.g. 1->0, 2->1, 8->3, etc.) L_ZERO just does the fullres texture (one texel -> one pixel), L_NEAREST selects the closest mipmap level, and L_LINEAR lerps between the two adjacent levels (if the calculated L is not an integer).</p>
 
-		<h2>Additional Notes (please remove)</h2>
-		<ul>
-			<li>You can also add code if you'd like as so: <code>code code code</code></li>
-			<li>If you'd like to add math equations, 
-				<ul>
-					<li>You can write inline equations like so: \( a^2 + b^2 = c^2 \)</li>
-					<li>You can write display equations like so: \[ a^2 + b^2 = c^2 \]</li>
-				</ul>
-			</li>
-		</ul>
+		<p>Tradeoffs: For sampling per pixel, more samples per pixel gives us the best antialiasing quality, but is expensive (sample buffer size, and thus memory and computation, scales linearly in this dimension.) For pixel sampling, bilinear will inherently be slower due to the need to do the extra memory lookups and math to interpolate, but not by much. Lastly, mipmapping will cost extra memory that scales linearly with the number of pixels, as it requires storage of all the downsampled levels of the texture. This is where the main cost comes in, and there's a minor bit of computational cost depending on which sampling method we use. Personally, I liked the combination of bilinear sampling and mipmapping the most for quality, unless short on memory. </p>
+
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/task6_lzero_pnearest.png" width="400px"/>
+				  <figcaption>L_ZERO, P_NEAREST.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/task6_lzero_plinear.png" width="400px"/>
+				  <figcaption>L_ZERO, P_LINEAR.</figcaption>
+				</td>
+			  </tr>
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/task6_lnearest_pnearest.png" width="400px"/>
+				  <figcaption>L_NEAREST, P_NEAREST.</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/task6_lnearest_plinear.png" width="400px"/>
+				  <figcaption>L_NEAREST, P_LINEAR.</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
+
+		<h2>LLM Usage</h2>
+		<p>As per course policy, I used the help of AI (Claude) with this assignment, specifically for: creating the triangle SVG, making a template (no content filled) for the writeup, and conceptual questions!</p>
+
 		</div>
 	</body>
 </html>
