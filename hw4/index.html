@@ -47,7 +47,7 @@
 
 		<h2>Overview</h2>
 		<p>
-			In this homework, I implemented a real-time cloth simulation using a mass-spring system. I built the cloth's physical structure with point masses and springs (structural, shearing, and bending), simulated its motion via numerical integration with Verlet integration, handled collisions with external objects (spheres and planes) as well as self-collisions using spatial hashing, and implemented several GLSL shaders including Blinn-Phong, texture mapping, bump/displacement mapping, and mirror reflections. It was interesting to see how tuning physical parameters like spring constant, density, and damping dramatically changes the cloth's behavior, and how shader programs running on the GPU can produce realistic lighting effects in real time.
+			In this homework, I implemented a real-time cloth simulation using a mass-spring system, with shaders (Blinn-Phong, texture mapping, bump/displacement mapping, and mirror reflections)! I was by far the most impressed by the look of the mirror shader, despite how simple it was to implement. However, I felt like everything was super cool for this project; I really like the turn into more realistic physics, as I find game engine work super interesting! Conceptually, I liked the way the cloth was modeled as a network of masses and springs in various directions.
 		</p>
 
 		<h2>Part 1: Masses and Springs</h2>
@@ -89,16 +89,58 @@
 		<p>
 			With a low <code>ks</code>, the cloth is very flexible and stretchy — it droops significantly under gravity and has more pronounced folds and wrinkles. With a high <code>ks</code>, the cloth is much stiffer and holds its shape more rigidly, with less sagging and fewer wrinkles. The springs resist deformation more strongly at higher values.
 		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/lowkspart2.png" width="400px"/>
+				  <figcaption>Low ks</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/highkspart2.png" width="400px"/>
+				  <figcaption>High ks</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h4>Density</h4>
 		<p>
-			Increasing density makes each point mass heavier, so gravity pulls the cloth down more — the cloth sags more and the top edge droops noticeably. With low density, the cloth is lighter and floats more, maintaining its shape with less deformation. The effect of density is somewhat inverse to that of <code>ks</code>: higher density behaves similarly to lower spring constant in terms of visual sagging.
+			Increasing density makes each point mass heavier, so gravity pulls the cloth down more. The cloth sags more and the top edge droops a ton. With low density, the cloth is more "floaty", maintaining its shape with less deformation. The effect of density is somewhat inverse to that of <code>ks</code>: higher density behaves similarly to lower spring constant in terms of sagging.
 		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/lowdensitypart2.png" width="400px"/>
+				  <figcaption>Low density</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/highdensitypart2.png" width="400px"/>
+				  <figcaption>High density</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h4>Damping</h4>
 		<p>
-			With low damping, the cloth oscillates for a long time before settling, swinging back and forth dramatically. With high damping, the cloth moves very slowly and smoothly to its resting position without any oscillation — it feels like it's moving through a viscous fluid. Damping controls how quickly kinetic energy is dissipated from the system.
+			With low damping, the cloth oscillates for a long time before settling, swinging back and forth dramatically. while high damping makes it glide to its rest without oscillation like there's a mild breeze.
 		</p>
+		<div style="display: flex; flex-direction: column; align-items: center;">
+			<table style="width: 100%; text-align: center; border-collapse: collapse;">
+			  <tr>
+				<td style="text-align: center;">
+				  <img src="images/lowdamppart2.png" width="400px"/>
+				  <figcaption>Low damping</figcaption>
+				</td>
+				<td style="text-align: center;">
+				  <img src="images/highdamppart2.png" width="400px"/>
+				  <figcaption>High damping</figcaption>
+				</td>
+			  </tr>
+			</table>
+		</div>
 
 		<h4>Cloth at Rest (<code>scene/pinned4.json</code>)</h4>
 		<div style="display: flex; flex-direction: column; align-items: center;">
@@ -142,7 +184,7 @@
 			</table>
 		</div>
 		<p>
-			At <code>ks = 500</code>, the cloth drapes very loosely over the sphere, conforming closely to its shape with many folds hanging down. At the default <code>ks = 5000</code>, the cloth drapes naturally with moderate folding. At <code>ks = 50000</code>, the cloth is much stiffer — it sits on top of the sphere without conforming as tightly, with fewer and broader folds, almost like a stiff fabric or cardboard.
+			At <code>ks = 500</code>, the cloth almost swathes itself over the sphere, conforming closely to its shape with many folds and wrinkles hanging down. At the default <code>ks = 5000</code>, the cloth drapes over more naturally. At <code>ks = 50000</code>, the cloth is much stiffer, and doesn't conform nearly as well.
 		</p>
 
 		<h3>Cloth at Rest on Plane</h3>
@@ -161,7 +203,7 @@
 
 		<h3>Self-Collision Implementation</h3>
 		<p>
-			I implemented self-collision handling using spatial hashing. The 3D space is divided into boxes of size <code>w * h * t</code> (based on the number of point masses and the bounding box dimensions), and each point mass is hashed into a box. When checking for self-collisions, for each point mass, I look up candidate point masses in the same hash bucket and check if any are within <code>2 * thickness</code> distance. If so, I compute a correction vector to push them apart to at least <code>2 * thickness</code> distance, and average all such corrections (excluding the point mass itself) to apply the final adjustment, scaled down by <code>simulation_steps</code>.
+			I implemented self-collision handling using spatial hashing. The 3D space is divided into boxes of size <code>w * h * t</code> (based on the number of point masses and the bounding box dimensions), and each point mass is hashed into a box (implemented by <code>x  + y * 10000 + z * 100000000</code> so digits are directly encoded in the hash) When checking for self-collisions, for each point mass, I look up candidate point masses in the same hash bucket and check if any are within <code>2 * t</code> distance. If so, I computed a correction vector to push them apart to at least <code>2 * t</code> distance, and average all such corrections (excluding the mass itself) to apply the final adjustment, scaled down by <code>simulation_steps</code>.
 		</p>
 
 		<h3>Cloth Falling and Folding on Itself</h3>
@@ -186,7 +228,7 @@
 
 		<h3>Varying Parameters</h3>
 		<p>
-			With higher density, the cloth falls faster and folds more tightly on itself, creating more layers of compressed folds. With lower density, the cloth falls more gently and the folds are wider and more spread out. With a higher <code>ks</code>, the cloth resists folding and the self-collision layers are broader and smoother — the cloth tries to maintain its flat shape. With a lower <code>ks</code>, the cloth crumples more easily, resulting in many small, tight folds stacking on top of each other.
+			With higher density, the cloth falls faster and crumples on itself, creating more layers of folds and wrinkles. With lower density, the cloth falls more gently and the folds are wider, rounder and more spread out. With a higher <code>ks</code>, the cloth resists folding and the folds are rounder and more spread out again. the cloth tries to maintain its flat shape. With a lower <code>ks</code>, the cloth crumples more easily, similar to the effect of increasing the density.
 		</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
@@ -217,7 +259,7 @@
 
 		<h3>Shader Programs</h3>
 		<p>
-			A shader program runs on the GPU and computes the visual appearance of each fragment (pixel) on screen. It consists of two main stages: the vertex shader and the fragment shader. The vertex shader runs first and processes each vertex of the geometry — it transforms vertex positions from model space to screen space and can pass along interpolated data like normals, texture coordinates, and positions to the next stage. The fragment shader then runs for every pixel covered by a triangle and determines the final color of that pixel, using the interpolated values from the vertex shader along with lighting calculations, texture lookups, and other effects. Together, they form a pipeline that turns 3D geometry into a 2D rendered image in real time.
+			A shader program runs on the GPU and computes the visual appearance of each fragment (pixel) on screen. It consists of two main stages: the vertex shader and the fragment shader. The vertex shader runs first and processes each vertex of the geometry, by transforming vertex positions from model space to screen space. It sends interpolated data like normals, texture coordinates, and positions to the fragment shader. The fragment shader then runs for every pixel covered by a triangle and determines the final color of that pixel, using the interpolated values from the vertex shader along with lighting calculations, texture lookups, etc.
 		</p>
 
 		<h3>Blinn-Phong Shading Model</h3>
@@ -267,7 +309,7 @@
 
 		<h3>Bump Mapping vs. Displacement Mapping</h3>
 		<p>
-			Bump mapping modifies the surface normals based on a height map texture without actually changing the geometry, creating the illusion of surface detail. Displacement mapping actually moves the vertices of the mesh according to the height map, physically altering the geometry to create real surface detail. The key difference is visible at silhouette edges and in shadows — displacement mapping produces genuine geometric detail, while bump mapping only fakes it through lighting tricks.
+			Bump mapping modifies the surface normals based on a height map texture without actually changing the geometry, creating the illusion of surface detail. On the other hand, displacement mapping moves the vertices of the mesh according to the height map, physically altering the geometry to the viewer (which is why we can see divots and bumps in the sphere).
 		</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
@@ -286,7 +328,7 @@
 
 		<h4>Coarseness Comparison (<code>-o 16 -a 16</code> vs. <code>-o 128 -a 128</code>)</h4>
 		<p>
-			With the coarser mesh (<code>-o 16 -a 16</code>), bump mapping looks essentially the same since it only modifies normals, but displacement mapping looks blocky and jagged because there aren't enough vertices to capture the fine detail of the height map. With the finer mesh (<code>-o 128 -a 128</code>), displacement mapping produces much smoother, more detailed surface deformations that closely match the height map texture, while bump mapping again looks similar regardless of mesh resolution.
+			With the coarser mesh (<code>-o 16 -a 16</code>), bump mapping looks essentially the same since it only modifies normals, but displacement mapping looks blocky and jagged because there aren't enough vertices to capture the fine detail of the height map. With the finer mesh (<code>-o 128 -a 128</code>), displacement mapping produces much smoother, more detailed surface adjustments (see the grooves of the brick pattern) that closely match the height map texture, while bump mapping again looks similar regardless of mesh resolution.
 		</p>
 		<div style="display: flex; flex-direction: column; align-items: center;">
 			<table style="width: 100%; text-align: center; border-collapse: collapse;">
@@ -330,7 +372,7 @@
 
 		<h2>LLM Usage</h2>
 		<p>
-			I used Claude to help me generate the website template and check it against the list of deliverables. I also used it to help me conceptually understand shader programs and debug my GLSL code.
+			I used Claude to help me generate the website template and check it against the list of deliverables! I also used it to organize all my screenshots.
 		</p>
 
 		</div>
